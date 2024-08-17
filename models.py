@@ -79,11 +79,17 @@ class Board:
         return min(scores, key=scores.get)
 
     def get_tile_after(self, current, roll):
-        return self._tiles[current._index + roll % len(self._tiles)]
+        if isinstance(roll, dict):
+            roll = next(iter(roll.values()))[0]
+        return self._tiles[(current._index + roll) % len(self._tiles)]
 
 class Targets:
     def __init__(self):
         self._targets = []
+        self._pickups = []
+    
+    def count(self):
+        return len(self._targets)
     
     def get(self):
         return self._targets
@@ -91,18 +97,26 @@ class Targets:
     def reset(self):
         self._targets = []
 
-    def add(self, targets):
+    def add(self, targets, pickup=False):
         if isinstance(targets, BoardTile):
             if not targets in self._targets:
                 self._targets.append(targets)
+                if pickup: self._pickups.append(targets)
         else:
             for target in targets:
-                self.add(target)
+                self.add(target, pickup)
+    
+    def is_target(self, target):
+        return target in self._targets
+
+    def is_pickup(self, target):
+        return self.is_target(target) and target in self._pickups
     
     def remove(self, targets):
         if isinstance(targets, BoardTile):
             if targets in self._targets:
                 self._targets.remove(targets)
+                if self.is_pickup(targets): self._pickups.remove(targets)
         else:
             for target in targets:
                 self.remove(target)

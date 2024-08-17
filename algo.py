@@ -4,7 +4,8 @@ log = logging.getLogger()
 
 
 class Algo:
-    dont_roll_1000 = True
+    hit_with = 1000
+    dont_roll_unless_hit = True
 
     def __init__(self, rollset):
         self._rollset = rollset
@@ -14,8 +15,6 @@ class Algo:
         self._paths = []
     
     def run(self, distance_remaining, current_path=[]):
-        hit_with = 1000
-
         log.debug(f"REMAINING: {distance_remaining}")
 
         if len(current_path) > 0:
@@ -23,16 +22,17 @@ class Algo:
         
         next_rolls = self._rollset.get_next(skip=len(current_path))
 
-        if not hit_with in next_rolls:
-            log.debug(f"Ran out of {hit_with}x rolls")
+        if not Algo.hit_with in next_rolls:
+            log.debug(f"Ran out of {Algo.hit_with}x rolls")
             return []
         
-        if hit_with > 100:
-            del next_rolls[2]
-            del next_rolls[3]
+        if Algo.hit_with > 100:
+            if 2 in next_rolls: del next_rolls[2]
+            if 3 in next_rolls: del next_rolls[3]
         
         possible_rolls = {}
         for multiplier in next_rolls:
+            if multiplier > Algo.hit_with: continue
             next_roll = next_rolls[multiplier]
             if (next_roll <= distance_remaining 
                 and not (distance_remaining - next_roll) == 1):
@@ -47,7 +47,7 @@ class Algo:
 
             log.debug(f"testing {multiplier}x roll {roll}")
             if roll == distance_remaining:
-                if multiplier == hit_with:
+                if multiplier == Algo.hit_with:
                     log.debug("hit!")
                     self._paths.append(current_path + [multiplier])
                     continue
@@ -55,7 +55,7 @@ class Algo:
                     log.debug("hit, but wrong multi")
                     continue
             else:
-                if multiplier == 1000 and Algo.dont_roll_1000:
+                if multiplier == Algo.hit_with and Algo.dont_roll_unless_hit:
                     continue
                 rest = self.run(distance_remaining - roll, current_path + [multiplier])
                 if len(rest) == 0:
